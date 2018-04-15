@@ -1,8 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { Coffee } from './../logic/Coffee';
 import { GeolocationService } from './../geolocation.service';
+import { DataService } from './../data.service';
 import { TastingRating } from '../logic/TastingRating';
 
 @Component({
@@ -14,10 +15,13 @@ export class CoffeeComponent implements OnInit, OnDestroy {
   coffee: Coffee;
   types = ['Espresso', 'Ristretto', 'Americano', 'Cappuccino'];
   routingSubscription;
+  tastingEnabled = false;
 
   constructor(
     private route: ActivatedRoute,
-    private geolocation: GeolocationService
+    private router: Router,
+    private geolocation: GeolocationService,
+    private data: DataService
   ) { }
 
   ngOnInit() {
@@ -25,7 +29,15 @@ export class CoffeeComponent implements OnInit, OnDestroy {
 
     this.routingSubscription = this.route.params
       .subscribe(params => {
-        console.log(params['id']);
+        if (params['id']) {
+          this.data.getCoffee(params['id'], (response) => {
+            this.coffee = response;
+
+            if (this.coffee.tastingRating) {
+              this.tastingEnabled = true;
+            }
+          });
+        }
       });
 
     this.geolocation.requestLocation(location => {
@@ -48,5 +60,12 @@ export class CoffeeComponent implements OnInit, OnDestroy {
     }
   }
 
+  save() {
+    this.data.save(this.coffee, result => {
+      if (result) {
+        this.router.navigate(['/']);
+      }
+    });
+  }
 
 }
